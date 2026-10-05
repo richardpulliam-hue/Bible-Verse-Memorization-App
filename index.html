@@ -127,12 +127,32 @@ textarea{min-height:120px;resize:vertical}
 .streak span{font-size:.7rem;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
 .vgrid{display:flex;gap:3px;margin-top:6px;flex-wrap:wrap}
 .vgrid i{width:12px;height:12px;border-radius:2px;background:var(--rule)}
-.vgrid i.b1{background:color-mix(in srgb,var(--ok) 25%,var(--rule))}
-.vgrid i.b2{background:color-mix(in srgb,var(--ok) 45%,var(--rule))}
-.vgrid i.b3{background:color-mix(in srgb,var(--ok) 65%,var(--rule))}
-.vgrid i.b4{background:color-mix(in srgb,var(--ok) 85%,var(--rule))}
-.vgrid i.b5{background:var(--ok)}
+.vgrid i.b1{background:color-mix(in srgb,var(--ok) 26%,var(--rule))}
+.vgrid i.b2{background:color-mix(in srgb,var(--ok) 36%,var(--rule))}
+.vgrid i.b3{background:color-mix(in srgb,var(--ok) 47%,var(--rule))}
+.vgrid i.b4{background:color-mix(in srgb,var(--ok) 58%,var(--rule))}
+.vgrid i.b5{background:color-mix(in srgb,var(--ok) 68%,var(--rule))}
+.vgrid i.b6{background:color-mix(in srgb,var(--ok) 79%,var(--rule))}
+.vgrid i.b7{background:color-mix(in srgb,var(--ok) 89%,var(--rule))}
+.vgrid i.b8{background:color-mix(in srgb,var(--ok) 100%,var(--rule))}
+.vgrid i.kept{outline:1.5px solid var(--ok);outline-offset:1px}
 .sync{font-size:.75rem;color:var(--muted)}
+.kept-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:4px}
+.krow{display:grid;grid-template-columns:1fr auto;gap:4px 12px;align-items:center;padding:10px 2px;border-bottom:1px solid var(--rule);background:none;border-left:0;border-right:0;border-top:0;text-align:left;color:var(--ink);font:inherit;cursor:pointer;width:100%}
+.krow .r{font-family:var(--serif);font-weight:600;font-size:1.05rem}
+.krow .s{font-size:.78rem;color:var(--muted);font-variant-numeric:tabular-nums;text-align:right}
+.krow .s.due{color:var(--rubric);font-weight:600}
+.fresh{grid-column:1/-1;height:5px;border-radius:3px;background:var(--rule);overflow:hidden}
+.fresh i{display:block;height:100%;background:var(--ok)}
+.fresh.low i{background:var(--gold)} .fresh.out i{background:var(--rubric)}
+.fr-card{gap:14px}
+.fr-top{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+.fr-kind{font-size:.72rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--rubric)}
+.fr-q{font-family:var(--serif);font-size:1.5rem;line-height:1.6}
+.fr-q .lt{letter-spacing:.18em}
+.fr-a{font-family:var(--serif);font-size:1.2rem;line-height:1.6;border-top:1px solid var(--rule);padding-top:12px}
+.fr-a b{color:var(--rubric)}
+.empty-kept{font-size:.9rem;color:var(--muted);padding:10px 2px;border-bottom:1px solid var(--rule)}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--surface);padding:9px 16px;border-radius:99px;font-weight:600;font-size:.85rem}
 </style>
 
@@ -177,11 +197,18 @@ textarea{min-height:120px;resize:vertical}
   </section>
 
   <section>
-    <div class="label" style="margin-bottom:4px">Review schedule</div>
+    <div class="label" style="margin-bottom:4px">Learning</div>
     <div class="queue" id="queue"></div>
     <div class="row" style="margin-top:12px"><button class="btn" id="exportBtn">Copy my verses</button><button class="btn" id="removeBtn">Remove this verse</button></div>
     <textarea id="exportBox" readonly hidden style="margin-top:10px"></textarea>
   </section>
+
+  <section id="keptSec">
+    <div class="kept-head"><div class="label">Kept &middot; mastered verses</div><button class="btn primary" id="freshBtn">Fresh review</button></div>
+    <div id="keptList"></div>
+  </section>
+
+  <section class="card fr-card" id="freshCard" hidden></section>
 
   <section id="familySec" hidden>
     <div class="row" style="justify-content:space-between;margin-bottom:4px"><div class="label" id="famTitle">Family</div><span class="sync" id="syncTxt"></span></div>
@@ -192,7 +219,10 @@ textarea{min-height:120px;resize:vertical}
 
   <section class="note">
     <div class="label" style="margin-bottom:6px">The method</div>
-    Work left to right. <b>Learn</b> breaks the verse into phrases, since you memorize a phrase at a time, not a word at a time. <b>Fade</b> removes words in stages so your memory has to supply more of the verse each pass. <b>Letters</b> is the first-letter drill: type the first letter of each word, with three tries before the word is shown. <b>Recall</b> is the real test, the whole verse and reference from a blank page. After each session, grade yourself. A verse you know moves to a longer interval (1, 3, 7, 14, then 30 days); one you miss comes back today. Testing yourself and spacing the reviews is what moves a verse into long-term memory, far more than rereading it. Everyone in the family signs in with their own name and PIN, so each person's schedule follows them to any phone, tablet or laptop. The family board shows who has practiced today, each person's streak in days, and how far along each verse is: the darker the square, the longer the review interval. A verse counts as mastered once its interval reaches 14 days.</section>
+    Work left to right. <b>Learn</b> breaks the verse into phrases, since you memorize a phrase at a time, not a word at a time. <b>Fade</b> removes words in stages so your memory has to supply more of the verse each pass. <b>Letters</b> is the first-letter drill: type the first letter of each word, with three tries before the word is shown. <b>Recall</b> is the real test, the whole verse and reference from a blank page. After each session, grade yourself. A verse you know moves to a longer interval (1, 3, 7, then 14 days); one you miss comes back today. Testing yourself and spacing the reviews is what moves a verse into long-term memory, far more than rereading it. Everyone in the family signs in with their own name and PIN, so each person's schedule follows them to any phone, tablet or laptop. The family board shows who has practiced today, each person's streak in days, and how far along each verse is: the darker the square, the longer the review interval. A verse counts as mastered once its interval reaches 14 days.</section>
+  <section class="note">
+    <div class="label" style="margin-bottom:6px">Keeping verses fresh</div>
+    Once a verse reaches a 14-day interval it moves to <b>Kept</b>. Kept verses keep coming back, but further apart each time (30, 60, 120, then 180 days), because a memory recalled just as it starts to fade lasts longer than one reviewed while it is still easy. <b>Fresh review</b> mixes your kept verses together and tests each one a different way: recite it from the reference, name the reference from its opening words, or recite it from first letters only. Mixing and switching directions keeps you from leaning on one cue. If a verse is shaky, it goes back to Learning for a review tomorrow, and one good review returns it to Kept. The freshness bar under each kept verse empties as its next review gets closer.</section>
   <section class="note" style="font-size:.75rem">Scripture quotations are from the ESV&reg; Bible (The Holy Bible, English Standard Version&reg;), &copy; 2001 by Crossway, a publishing ministry of Good News Publishers. Used by permission. All rights reserved.
   </section>
 </div>
@@ -218,7 +248,9 @@ const esvUrl=ref=>"https://www.esv.org/"+encodeURIComponent(ref).replace(/%20/g,
 function slug(s){return s.toLowerCase().replace(/[^a-z0-9]+/g,'-')}
 const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},
              set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
-const INTERVALS=[0,1,3,7,14,30];
+const INTERVALS=[0,1,3,7,14,30,60,120,180];
+const MAXBOX=INTERVALS.length-1, KEPT=4; // box 4 = 14-day interval = mastered
+const isKept=id=>P(id).box>=KEPT;
 function today(){const d=new Date();return Math.floor((d.getTime()-d.getTimezoneOffset()*6e4)/864e5)}
 
 let verses=(()=>{
@@ -369,7 +401,7 @@ function renderStage(){
 
 function renderGrade(){
   const p=P(cur),t=today();
-  const nextBox={again:1,hard:Math.max(1,p.box),good:Math.min(5,p.box+1)};
+  const nextBox={again:1,hard:Math.max(1,p.box),good:Math.min(MAXBOX,p.box+1)};
   const lbl=d=>d===0?'today':d===1?'tomorrow':`in ${d} days`;
   const days={again:0,hard:1,good:INTERVALS[nextBox.good]};
   $('gradeRow').innerHTML=['again','hard','good'].map(g=>`<button class="btn ${g==='good'?'primary':''}" data-g="${g}">${g[0].toUpperCase()+g.slice(1)}<small style="${g==='good'?'color:inherit;opacity:.75':''}">${lbl(days[g])}</small></button>`).join('');
@@ -380,16 +412,17 @@ function renderGrade(){
     if(nxt&&g!=='again'){cur=nxt.id;lettersState=null;mode='learn';save()}
     render();
   });
-  $('boxTxt').textContent=p.n?`BOX ${p.box} OF 5 · ${p.due<=t?'DUE TODAY':'NEXT '+lbl(p.due-t).toUpperCase()}`:'NEW';
+  $('boxTxt').textContent=p.n?`${p.box>=KEPT?'KEPT':'BOX '+p.box+' OF '+(KEPT-1)} · ${p.due<=t?'DUE TODAY':'NEXT '+lbl(p.due-t).toUpperCase()}`:'NEW';
 }
 
 function renderQueue(){
   const t=today();
-  const rows=[...verses].sort((x,y)=>(!x.text)-(!y.text)||P(x.id).due-P(y.id).due);
+  const rows=[...verses].filter(v=>!isKept(v.id)).sort((x,y)=>(!x.text)-(!y.text)||P(x.id).due-P(y.id).due);
   $('queue').innerHTML=rows.map(v=>{const p=P(v.id),s=status(v.id);
     const when=s==='empty'?'Needs text pasted':s==='new'?'New, start in Learn':s==='due'?'Due today':`Next in ${p.due-t} day${p.due-t>1?'s':''}`;
     return `<button class="qrow" data-id="${v.id}"><div><div class="r">${esc(v.ref)}</div><div class="s ${s==='done'||s==='empty'?'':'due'}">${when}</div></div>
-      <div class="boxes" title="Box ${p.box} of 5">${[1,2,3,4,5].map(n=>`<i class="${p.box>=n?'on':''}"></i>`).join('')}</div></button>`}).join('');
+      <div class="boxes" title="Box ${p.box} of ${KEPT-1}">${[1,2,3].map(n=>`<i class="${p.box>=n?'on':''}"></i>`).join('')}</div></button>`}).join('');
+  if(!rows.length)$('queue').innerHTML='<p class="result" style="padding:10px 2px">Every verse is mastered. They all live in Kept now.</p>';
   $('queue').querySelectorAll('[data-id]').forEach(b=>b.onclick=()=>{cur=b.dataset.id;lettersState=null;save();render();$('studyCard').scrollIntoView({behavior:'smooth'})});
   $('removeBtn').textContent=removeArmed?`Tap again to remove ${verse().ref}`:'Remove this verse';
   $('removeBtn').disabled=verses.length<=1||verse().built;
@@ -402,7 +435,7 @@ function render(){
   $('refTxt').textContent=`${v.ref}${v.tr?' '+v.tr:''}`;
   $('tabs').querySelectorAll('.tab').forEach(b=>b.setAttribute('aria-selected',b.dataset.m===mode));
   $('tabs').hidden=!v.text;document.querySelector('.grade').hidden=!v.text;
-  renderPicker();renderStage();renderGrade();renderQueue();
+  renderPicker();renderStage();renderGrade();renderQueue();renderKept();
 }
 
 $('tabs').querySelectorAll('.tab').forEach(b=>b.onclick=()=>{mode=b.dataset.m;render()});
@@ -424,6 +457,59 @@ $('exportBtn').onclick=()=>{
   const fallback=()=>{box.hidden=false;box.focus();box.select();toast('Select all and copy')};
   try{navigator.clipboard.writeText(txt).then(()=>toast('Copied. Paste it to Claude to hard-code these.'),fallback)}catch(e){fallback()}
 };
+
+/* ================= Kept verses and fresh review ================= */
+let fresh=null;
+function keptDue(){const t=today();return verses.filter(v=>v.text&&isKept(v.id)&&P(v.id).due<=t)}
+function renderKept(){
+  const t=today(),kept=verses.filter(v=>v.text&&isKept(v.id)).sort((a,b)=>P(a.id).due-P(b.id).due);
+  const due=kept.filter(v=>P(v.id).due<=t).length;
+  $('freshBtn').disabled=!kept.length;
+  $('freshBtn').textContent=due?`Fresh review (${due} due)`:'Fresh review';
+  if(!kept.length){$('keptList').innerHTML='<div class="empty-kept">No mastered verses yet. A verse moves here once you grade it Good enough times to reach a 14-day interval.</div>';return}
+  $('keptList').innerHTML=kept.map(v=>{const p=P(v.id),iv=INTERVALS[p.box]||1,left=p.due-t;
+    const pct=Math.max(0,Math.min(100,left/iv*100)),cls=left<=0?'out':pct<34?'low':'';
+    const when=left<=0?'Refresh due':left===1?'Refresh tomorrow':`Refresh in ${left} days`;
+    return `<button class="krow" data-id="${v.id}"><span class="r">${esc(v.ref)}</span><span class="s ${left<=0?'due':''}">${when}</span>
+      <span class="fresh ${cls}"><i style="width:${pct}%"></i></span></button>`}).join('');
+  $('keptList').querySelectorAll('[data-id]').forEach(b=>b.onclick=()=>{cur=b.dataset.id;lettersState=null;mode='recall';save();render();$('studyCard').scrollIntoView({behavior:'smooth'})});
+}
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+$('freshBtn').onclick=()=>{
+  const t=today();let pool=keptDue();
+  if(!pool.length)pool=verses.filter(v=>v.text&&isKept(v.id)).sort((a,b)=>P(a.id).due-P(b.id).due).slice(0,3);
+  const kinds=['ref','start','letters'];
+  fresh={items:shuffle(pool.map(v=>v.id)).map((id,i)=>({id,kind:kinds[(i+Math.floor(Math.random()*3))%3]})),i:0,shown:false,got:0,early:!keptDue().length};
+  $('freshCard').hidden=false;drawFresh();$('freshCard').scrollIntoView({behavior:'smooth',block:'start'});
+};
+function drawFresh(){
+  const F=fresh,c=$('freshCard');
+  if(F.i>=F.items.length){
+    c.innerHTML=`<div class="fr-top"><span class="fr-kind">Fresh review done</span></div>
+      <div class="fr-q" style="font-size:1.25rem"><b>${F.got}</b> of ${F.items.length} solid.${F.got<F.items.length?' The shaky ones are back in Learning, due tomorrow. One good review sends them back to Kept.':''}</div>
+      <p class="result">Saying a verse out loud to someone else is one of the best refreshers there is. Try one at dinner.</p>
+      <div class="row"><button class="btn" id="frClose">Close</button></div>`;
+    $('frClose').onclick=()=>{$('freshCard').hidden=true;fresh=null;render()};return;
+  }
+  const it=F.items[F.i],v=verses.find(x=>x.id===it.id),toks=tokens(v.text);
+  const words=v.text.split(/\s+/),startN=Math.min(4,Math.max(2,Math.ceil(words.length/6)));
+  const prompt=it.kind==='ref'?{k:'Recite it from the reference',q:`<b style="color:var(--rubric)">${esc(v.ref)}</b>`,h:'Say the whole verse out loud, then check.'}
+    :it.kind==='start'?{k:'Name the reference, then finish it',q:`${esc(words.slice(0,startN).join(' '))} &hellip;`,h:'Say where it is found and the rest of the verse, then check.'}
+    :{k:'Recite it from first letters',q:`<span class="lt">${toks.map(t=>t.core?esc(t.lead+t.core[0]+t.trail):esc(t.w)).join(' ')}</span>`,h:'Say the verse and its reference, then check.'};
+  c.innerHTML=`<div class="fr-top"><span class="fr-kind">${prompt.k}</span><span class="result">${F.i+1} of ${F.items.length}${F.early?' · early review':''}</span></div>
+    <div class="fr-q">${prompt.q}</div>
+    ${F.shown?`<div class="fr-a"><b>${esc(v.ref)}</b><br>${esc(v.text)}</div>
+      <div class="row"><button class="btn" id="frShaky" style="flex:1">Shaky</button><button class="btn primary" id="frGot" style="flex:1">Got it</button></div>`
+     :`<p class="result">${prompt.h}</p><div class="row"><button class="btn primary" id="frShow" style="flex:1">Check</button><button class="btn" id="frEnd">End</button></div>`}`;
+  if(!F.shown){$('frShow').onclick=()=>{F.shown=true;drawFresh()};$('frEnd').onclick=()=>{$('freshCard').hidden=true;fresh=null;render()};return}
+  const t=today(),p=P(v.id);
+  const next=g=>{
+    if(g){ if(!F.early||p.due<=t+Math.ceil((INTERVALS[p.box]||1)/2)){p.box=Math.min(MAXBOX,p.box+1)} p.due=t+INTERVALS[p.box];F.got++ }
+    else { p.box=KEPT-1; p.due=t+1 }
+    p.n++;p.last=t;save();queueSync(v.id);F.i++;F.shown=false;renderKept();renderQueue();renderPicker();drawFresh();
+  };
+  $('frGot').onclick=()=>next(true);$('frShaky').onclick=()=>next(false);
+}
 
 /* ================= Family login, sync and board ================= */
 const COLORS=['#A3252B','#2E6A49','#2F5D8A','#8E7128','#6B4C9A','#B5582B','#3C7A86','#4A4F57'];
@@ -592,14 +678,14 @@ async function loadBoard(){
   const t=today(),built=verses.filter(v=>v.built);
   const rows=r.members.map(m=>{
     const days=m.days||[],st=streakOf(days),pr=m.progress||{};
-    const mastered=built.filter(v=>(pr[v.id]?.box||0)>=4).length;
+    const mastered=built.filter(v=>(pr[v.id]?.box||0)>=KEPT).length;
     const due=built.filter(v=>pr[v.id]&&pr[v.id].n>0&&pr[v.id].due<=t).length;
     const last=days[0];
     const when=last===t?'<span class="today">Practiced today</span>':last===t-1?'Last practiced yesterday':last?`Last practiced ${t-last} days ago`:'Not started yet';
     return {m,st,html:`<div class="mrow">${av(m)}
       <div style="min-width:0"><div class="nm">${esc(m.name)}${m.id===session.id?' <span class="meta">(you)</span>':''}</div>
         <div class="meta">${when} &middot; <b>${mastered}</b> of ${built.length} mastered${due?` &middot; ${due} due`:''}</div>
-        <div class="vgrid">${built.map(v=>`<i class="b${pr[v.id]?.box||0}" title="${esc(v.ref)}: box ${pr[v.id]?.box||0} of 5"></i>`).join('')}</div></div>
+        <div class="vgrid">${built.map(v=>`<i class="b${pr[v.id]?.box||0}${(pr[v.id]?.box||0)>=KEPT?' kept':''}" title="${esc(v.ref)}: ${(pr[v.id]?.box||0)>=KEPT?'mastered':'box '+(pr[v.id]?.box||0)}"></i>`).join('')}</div></div>
       <div class="streak"><b>${st}</b><span>day streak</span></div></div>`};
   });
   $('board').innerHTML=rows.map(x=>x.html).join('')||'<p class="sub">No one has joined yet.</p>';
