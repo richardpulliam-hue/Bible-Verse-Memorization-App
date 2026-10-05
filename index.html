@@ -1,0 +1,372 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Hidden Word">
+<meta name="theme-color" content="#E9ECE5">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;-webkit-text-size-adjust:100%}[hidden]{display:none!important}img{max-width:100%}</style>
+<title>Hidden Word</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Hanken+Grotesk:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: single column "lectern" — verse picker strip, one reading card with method tabs, review queue below. Rubric red marks cues, like a manuscript's rubrication. */
+:root{
+  --bg:#E9ECE5; --surface:#F7F8F4; --ink:#1C2331; --muted:#5D6570; --rule:#CCD2C6;
+  --rubric:#A3252B; --rubric-soft:#A3252B1A; --ok:#2E6A49; --ok-soft:#2E6A4918; --gold:#8E7128;
+  --serif:"EB Garamond",Garamond,"Times New Roman",serif;
+  --sans:"Hanken Grotesk",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#13161B; --surface:#1B1F26; --ink:#E7E5DD; --muted:#9BA1A9; --rule:#2F353E;
+  --rubric:#E3696C; --rubric-soft:#E3696C22; --ok:#74C394; --ok-soft:#74C39420; --gold:#D3B262; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#13161B; --surface:#1B1F26; --ink:#E7E5DD; --muted:#9BA1A9; --rule:#2F353E;
+  --rubric:#E3696C; --rubric-soft:#E3696C22; --ok:#74C394; --ok-soft:#74C39420; --gold:#D3B262; color-scheme:dark}
+html,body{background:var(--bg);color:var(--ink)}
+body{font-family:var(--sans);font-size:15px;line-height:1.5}
+.wrap{max-width:720px;margin:0 auto;padding:20px 16px 48px;display:flex;flex-direction:column;gap:18px}
+header{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+h1{font-family:var(--serif);font-weight:500;font-size:2rem;margin:0;letter-spacing:.01em}
+h1 em{color:var(--rubric);font-style:italic}
+.due-pill{font-size:.8rem;font-weight:600;padding:4px 10px;border-radius:99px;background:var(--rubric-soft);color:var(--rubric)}
+.label{font-size:.7rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.picker{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:thin}
+.chip{flex:0 0 auto;font:600 .85rem var(--sans);border:1px solid var(--rule);background:transparent;color:var(--ink);padding:7px 12px;border-radius:99px;cursor:pointer;display:flex;align-items:center;gap:7px}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--rule)}
+.dot.due{background:var(--rubric)} .dot.empty{background:transparent;border:1px solid var(--muted)} .dot.done{background:var(--ok)}
+.chip.add{border-style:dashed;color:var(--muted)}
+.card{background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:20px 18px;display:flex;flex-direction:column;gap:16px}
+.ref{font-family:var(--serif);font-size:1.45rem;font-weight:600;color:var(--rubric);display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+.ref small{font-family:var(--sans);font-size:.75rem;font-weight:600;color:var(--muted);letter-spacing:.06em}
+.tabs{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--rule);border-radius:8px;overflow:hidden}
+.tab{font:600 .8rem var(--sans);padding:9px 4px;background:transparent;border:0;border-right:1px solid var(--rule);color:var(--muted);cursor:pointer}
+.tab:last-child{border-right:0}
+.tab[aria-selected="true"]{background:var(--ink);color:var(--surface)}
+.tab span{display:block;font-weight:500;font-size:.68rem;opacity:.75}
+.verse{font-family:var(--serif);font-size:1.4rem;line-height:1.75;min-height:4em}
+.verse .w{white-space:nowrap}
+.blank{display:inline-block;border-bottom:2px solid var(--ink);height:1.05em;vertical-align:-.1em;cursor:pointer;border-radius:1px}
+.blank.cur{border-color:var(--rubric);background:var(--rubric-soft)}
+.hint{color:var(--rubric);font-weight:600}
+.peek{color:var(--gold)}
+.ok{color:var(--ink)} .helped{color:var(--gold)} .miss{color:var(--rubric);text-decoration:underline wavy;text-underline-offset:4px}
+.chunks{list-style:none;margin:0;padding:0;font-family:var(--serif);font-size:1.4rem;line-height:1.55;display:flex;flex-direction:column;gap:6px}
+.chunks li{padding-left:14px;border-left:2px solid var(--rule)}
+.steps{margin:0;padding-left:20px;color:var(--muted);font-size:.9rem;display:flex;flex-direction:column;gap:4px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.btn{font:600 .88rem var(--sans);padding:9px 14px;border-radius:7px;border:1px solid var(--rule);background:var(--surface);color:var(--ink);cursor:pointer}
+.btn.primary{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+.btn:disabled{opacity:.4;cursor:default}
+.btn:focus-visible,.chip:focus-visible,.tab:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--rubric);outline-offset:2px}
+.levels{flex:1;min-width:110px;display:flex;gap:4px}
+.lvl{flex:1;height:10px;border:0;border-radius:3px;background:var(--rule);cursor:pointer;padding:0}
+.lvl.on{background:var(--rubric)}
+.meter{flex:1;min-width:120px;height:6px;background:var(--rule);border-radius:3px;overflow:hidden}
+.meter i{display:block;height:100%;background:var(--rubric);transition:width .25s}
+.typer{width:100%;font:500 1rem var(--sans);padding:12px;border:1px solid var(--rule);border-radius:8px;background:var(--bg);color:var(--ink);text-align:center;letter-spacing:.2em}
+.typer.shake{animation:shake .25s}
+@keyframes shake{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+@media (prefers-reduced-motion:reduce){.typer.shake{animation:none}.meter i{transition:none}}
+textarea,input[type=text]{width:100%;box-sizing:border-box;font:1.05rem/1.5 var(--serif);padding:10px 12px;border:1px solid var(--rule);border-radius:8px;background:var(--bg);color:var(--ink)}
+textarea{min-height:120px;resize:vertical}
+.result{font-size:.9rem;color:var(--muted)}
+.result b{color:var(--ink);font-variant-numeric:tabular-nums}
+.grade{border-top:1px solid var(--rule);padding-top:14px;display:flex;flex-direction:column;gap:8px}
+.grade .row .btn{flex:1;min-width:90px;display:flex;flex-direction:column;align-items:center;gap:1px}
+.grade .btn small{font-weight:500;font-size:.7rem;color:var(--muted)}
+.queue{display:flex;flex-direction:column}
+.qrow{display:grid;grid-template-columns:1fr auto;gap:10px;padding:10px 2px;border-bottom:1px solid var(--rule);cursor:pointer;background:none;border-left:0;border-right:0;border-top:0;text-align:left;color:var(--ink);font:inherit}
+.qrow .r{font-family:var(--serif);font-weight:600;font-size:1.05rem}
+.qrow .s{font-size:.78rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.qrow .s.due{color:var(--rubric);font-weight:600}
+.boxes{display:flex;gap:3px;align-items:center}
+.boxes i{width:10px;height:10px;border-radius:2px;background:var(--rule)}
+.boxes i.on{background:var(--ok)}
+.addpanel{display:flex;flex-direction:column;gap:10px}
+.note{font-size:.88rem;color:var(--muted);line-height:1.6;max-width:65ch}
+.note b{color:var(--ink)}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--surface);padding:9px 16px;border-radius:99px;font-weight:600;font-size:.85rem}
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Hidden <em>Word</em></h1>
+    <span class="due-pill" id="duePill"></span>
+  </header>
+
+  <div>
+    <div class="label" style="margin-bottom:8px">Your verses</div>
+    <div class="picker" id="picker"></div>
+  </div>
+
+  <section class="card" id="addCard" hidden>
+    <div class="label">Add a verse</div>
+    <div class="addpanel">
+      <input type="text" id="newRef" placeholder="Reference, e.g. Micah 6:8">
+      <textarea id="newText" placeholder="Paste the ESV text from esv.org"></textarea>
+      <div class="row">
+        <button class="btn primary" id="saveVerse">Save verse</button>
+        <button class="btn" id="cancelAdd">Cancel</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="card" id="studyCard">
+    <div class="ref"><span id="refTxt"></span><small id="boxTxt"></small></div>
+    <div class="tabs" role="tablist" id="tabs">
+      <button class="tab" role="tab" data-m="learn">Learn<span>chunks</span></button>
+      <button class="tab" role="tab" data-m="fade">Fade<span>hide words</span></button>
+      <button class="tab" role="tab" data-m="letters">Letters<span>first letter</span></button>
+      <button class="tab" role="tab" data-m="recall">Recall<span>type it out</span></button>
+    </div>
+    <div id="stage"></div>
+    <div class="grade">
+      <div class="label">How well did you know it?</div>
+      <div class="row" id="gradeRow"></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="label" style="margin-bottom:4px">Review schedule</div>
+    <div class="queue" id="queue"></div>
+    <div class="row" style="margin-top:12px"><button class="btn" id="exportBtn">Copy my verses</button><button class="btn" id="removeBtn">Remove this verse</button></div>
+    <textarea id="exportBox" readonly hidden style="margin-top:10px"></textarea>
+  </section>
+
+  <section class="note">
+    <div class="label" style="margin-bottom:6px">The method</div>
+    Work left to right. <b>Learn</b> breaks the verse into phrases, since you memorize a phrase at a time, not a word at a time. <b>Fade</b> removes words in stages so your memory has to supply more of the verse each pass. <b>Letters</b> is the first-letter drill: type the first letter of each word, with three tries before the word is shown. <b>Recall</b> is the real test, the whole verse and reference from a blank page. After each session, grade yourself. A verse you know moves to a longer interval (1, 3, 7, 14, then 30 days); one you miss comes back today. Testing yourself and spacing the reviews is what moves a verse into long-term memory, far more than rereading it. Verses listed in the app's code are on every device. Your review progress is saved on each device separately.</section>
+  <section class="note" style="font-size:.75rem">Scripture quotations are from the ESV&reg; Bible (The Holy Bible, English Standard Version&reg;), &copy; 2001 by Crossway, a publishing ministry of Good News Publishers. Used by permission. All rights reserved.
+  </section>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+/* ===== MY VERSES — hard-coded so they survive on every device =====
+   Add or edit entries here. Leave text "" to paste it in the app instead. */
+const MY_VERSES = [
+  {ref:"John 3:16", text:"For God so loved the world, that he gave his only Son, that whoever believes in him should not perish but have eternal life."},
+  {ref:"Proverbs 3:5-6", text:"Trust in the Lord with all your heart, and do not lean on your own understanding. In all your ways acknowledge him, and he will make straight your paths."},
+  {ref:"Psalm 119:11", text:"I have stored up your word in my heart, that I might not sin against you."},
+  {ref:"Joshua 1:9", text:"Have I not commanded you? Be strong and courageous. Do not be frightened, and do not be dismayed, for the Lord your God is with you wherever you go."},
+  {ref:"Philippians 4:13", text:"I can do all things through him who strengthens me."},
+  {ref:"Romans 8:28", text:"And we know that for those who love God all things work together for good, for those who are called according to his purpose."},
+  {ref:"Isaiah 40:31", text:"but they who wait for the Lord shall renew their strength; they shall mount up with wings like eagles; they shall run and not be weary; they shall walk and not faint."},
+  {ref:"1 Timothy 4:12", text:"Let no one despise you for your youth, but set the believers an example in speech, in conduct, in love, in faith, in purity."}
+];
+const SEED = MY_VERSES.map(v=>({id:slug(v.ref),ref:v.ref,text:v.text,tr:"ESV",built:true}));
+const esvUrl=ref=>"https://www.esv.org/"+encodeURIComponent(ref).replace(/%20/g,"+").replace(/%3A/gi,":")+"/";
+
+function slug(s){return s.toLowerCase().replace(/[^a-z0-9]+/g,'-')}
+const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},
+             set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+const INTERVALS=[0,1,3,7,14,30];
+function today(){const d=new Date();return Math.floor((d.getTime()-d.getTimezoneOffset()*6e4)/864e5)}
+
+let verses=(()=>{
+  const local=store.get('hw2.verses',[])||[];
+  const out=SEED.map(v=>{const l=local.find(x=>x.id===v.id);return v.text?v:{...v,text:(l&&l.text)||''}});
+  local.forEach(l=>{if(!out.find(v=>v.id===l.id)&&!l.removedBuiltIn&&!SEED.find(v=>v.id===l.id))out.push({...l,built:false})});
+  return out;
+})();
+let prog=store.get('hw2.prog',{});
+let cur=store.get('hw2.cur',verses[0].id);
+if(!verses.find(v=>v.id===cur)) cur=verses[0].id;
+let mode='learn';
+let fadeLevel={};
+let lettersState=null;
+let removeArmed=false;
+
+const $=id=>document.getElementById(id);
+const esc=s=>s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function verse(){return verses.find(v=>v.id===cur)}
+function P(id){return prog[id]||(prog[id]={box:0,due:today(),n:0})}
+function save(){store.set('hw2.verses',verses);store.set('hw2.prog',prog);store.set('hw2.cur',cur)}
+function toast(t){const el=$('toast');el.textContent=t;el.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>el.hidden=true,1800)}
+
+function tokens(text){
+  return text.split(/\s+/).filter(Boolean).map(w=>{
+    const m=w.match(/^([^A-Za-z0-9]*)(.*?)([^A-Za-z0-9]*)$/);
+    const core=m[2];
+    return {w,lead:m[1],core,trail:m[3],letter:core?core[0].toLowerCase():null};
+  });
+}
+function blank(t,cls=''){return `<span class="blank ${cls}" style="width:${Math.max(1.2,t.core.length*.52)}em"></span>`}
+function status(id){const v=verses.find(x=>x.id===id);if(v&&!v.text)return'empty';const p=P(id),t=today();if(p.n===0)return'new';return p.due<=t?'due':'done'}
+
+function renderPicker(){
+  $('picker').innerHTML=verses.map(v=>`<button class="chip" aria-pressed="${v.id===cur}" data-id="${v.id}"><span class="dot ${status(v.id)}"></span>${esc(v.ref)}</button>`).join('')
+    +`<button class="chip add" id="addChip">+ Add verse</button>`;
+  $('picker').querySelectorAll('[data-id]').forEach(b=>b.onclick=()=>{cur=b.dataset.id;lettersState=null;removeArmed=false;save();render()});
+  $('addChip').onclick=()=>{$('addCard').hidden=false;$('newRef').focus()};
+  const due=verses.filter(v=>['new','due'].includes(status(v.id))).length;
+  $('duePill').textContent=due?`${due} to review today`:'All caught up';
+}
+
+function renderStage(){
+  const v=verse(),toks=tokens(v.text),st=$('stage');
+  if(!v.text){
+    st.innerHTML=`<div class="addpanel"><div class="note">Paste the ${esc(v.tr||'ESV')} text for ${esc(v.ref)} once and it stays saved. <a href="${esvUrl(v.ref)}" target="_blank" rel="noopener" style="color:var(--rubric);font-weight:600">Open ${esc(v.ref)} on esv.org</a></div>
+      <textarea id="fillTxt" placeholder="Paste the verse text here"></textarea>
+      <div class="row"><button class="btn primary" id="fillSave">Save text</button></div></div>`;
+    $('fillSave').onclick=()=>{const t=$('fillTxt').value.trim().replace(/\s+/g,' ').replace(/^\d+\s*/,'');if(!t){toast('Paste the verse text first');return}v.text=t;save();render();toast('Saved')};
+    return;
+  }
+  if(mode==='learn'){
+    const chunks=v.text.split(/(?<=[,;:.?!])\s+/);
+    st.innerHTML=`<ul class="chunks">${chunks.map(c=>`<li>${esc(c)}</li>`).join('')}</ul>
+      <ol class="steps"><li>Read it aloud three times, starting and ending with the reference.</li>
+      <li>Say one line, look away, and repeat it. Then add the next line.</li>
+      <li>When you can say it with a glance or two, move to Fade.</li></ol>`;
+  }
+  if(mode==='fade'){
+    const levels=[{f:0,n:'Full text'},{f:.25,n:'25% hidden'},{f:.5,n:'50% hidden'},{f:.75,n:'75% hidden'},{f:1,n:'First letters only',h:1},{f:1,n:'All hidden'}];
+    const L=fadeLevel[v.id]??1, lv=levels[L];
+    const idx=toks.map((t,i)=>i).filter(i=>toks[i].core);
+    let seed=[...v.id].reduce((a,c)=>(a*31+c.charCodeAt(0))>>>0,7);
+    const rnd=()=>(seed=(seed*1664525+1013904223)>>>0)/4294967296;
+    for(let i=idx.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[idx[i],idx[j]]=[idx[j],idx[i]]}
+    const hidden=new Set(idx.slice(0,Math.round(lv.f*idx.length)));
+    st.innerHTML=`<div class="verse">${toks.map((t,i)=>hidden.has(i)
+      ?`<span class="w">${esc(t.lead)}${lv.h?`<span class="hint">${esc(t.core[0])}</span>`:''}<span data-peek="${esc(t.core)}">${blank(t)}</span>${esc(t.trail)}</span>`
+      :`<span class="w">${esc(t.w)}</span>`).join(' ')}</div>
+      <div class="row"><button class="btn" id="less" ${L===0?'disabled':''}>&minus; Hide less</button>
+      <div class="levels">${levels.map((x,i)=>`<button class="lvl ${i<=L?'on':''}" data-l="${i}" aria-label="Level ${i+1}: ${x.n}"></button>`).join('')}</div>
+      <button class="btn primary" id="more" ${L===5?'disabled':''}>Hide more +</button></div>
+      <div class="result">Level ${L+1} of 6 · ${lv.n} · Say the verse aloud, tapping a blank only when stuck.</div>`;
+    st.querySelectorAll('[data-peek]').forEach(s=>s.onclick=()=>{s.innerHTML=`<span class="peek">${esc(s.dataset.peek)}</span>`});
+    $('less').onclick=()=>{fadeLevel[v.id]=L-1;renderStage()};
+    st.querySelectorAll('[data-l]').forEach(b=>b.onclick=()=>{fadeLevel[v.id]=+b.dataset.l;renderStage()});
+    $('more').onclick=()=>{fadeLevel[v.id]=L+1;renderStage()};
+  }
+  if(mode==='letters'){
+    const fresh=()=>({id:v.id,i:0,err:0,marks:toks.map(t=>t.core?null:'ok'),hist:[]});
+    if(!lettersState||lettersState.id!==v.id) lettersState=fresh();
+    let S=lettersState;
+    const scored=toks.filter(t=>t.core).length;
+    st.innerHTML=`<div class="verse" id="lv"></div>
+      <div id="lDone" hidden></div>
+      <input class="typer" id="typer" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="next" placeholder="Type the first letter of each word">
+      <div class="row"><div class="meter"><i id="lm"></i></div><span class="result" id="lt"></span></div>
+      <div class="row"><button class="btn" id="lBack">&larr; Back one word</button><button class="btn" id="lReset">Start over</button></div>`;
+    const inp=$('typer');
+    function draw(){
+      while(S.i<toks.length&&!toks[S.i].core)S.i++;
+      const done=S.i>=toks.length;
+      $('lv').innerHTML=toks.map((t,i)=>{const m=S.marks[i];
+        if(m) return `<span class="w ${m}">${esc(t.w)}</span>`;
+        return `<span class="w">${esc(t.lead)}${blank(t,i===S.i?'cur':'')}${esc(t.trail)}</span>`}).join(' ');
+      $('lm').style.width=(S.i/toks.length*100)+'%';
+      $('lt').innerHTML=done?'':`<b>${S.err}</b>/3 tries on this word`;
+      $('lBack').disabled=!S.hist.length;
+      const right=S.marks.filter((m,i)=>m==='ok'&&toks[i].core).length;
+      $('lDone').hidden=!done;inp.hidden=done;
+      if(done)$('lDone').innerHTML=`<div class="result">Done. <b>${right}/${scored}</b> words on the first try (${Math.round(right/scored*100)}%). Gold words took more than one try; red words were shown after three.</div>`;
+      $('lReset').textContent=done?'Go again':'Start over';
+      $('lReset').className=done?'btn primary':'btn';
+    }
+    function press(c){
+      if(!/[a-z0-9]/.test(c)||S.i>=toks.length)return;
+      const t=toks[S.i];
+      if(c===t.letter){S.hist.push({i:S.i,err:S.err});S.marks[S.i]=S.err?'helped':'ok';S.i++;S.err=0}
+      else{S.err++;inp.classList.remove('shake');void inp.offsetWidth;inp.classList.add('shake');
+        if(S.err>=3){S.hist.push({i:S.i,err:0});S.marks[S.i]='miss';S.i++;S.err=0}}
+      draw();
+    }
+    inp.oninput=()=>{const val=inp.value;inp.value='';for(const ch of val)press(ch.toLowerCase())};
+    $('lBack').onclick=()=>{const h=S.hist.pop();if(!h)return;for(let k=h.i;k<toks.length;k++)if(toks[k].core)S.marks[k]=null;S.i=h.i;S.err=0;draw();inp.hidden=false;inp.focus()};
+    $('lReset').onclick=()=>{lettersState=S=fresh();draw();inp.focus()};
+    draw();
+    if(!matchMedia('(pointer:coarse)').matches)inp.focus({preventScroll:true});
+  }
+  if(mode==='recall'){
+    st.innerHTML=`<input type="text" id="recRef" placeholder="Reference">
+      <textarea id="recTxt" placeholder="Write the verse from memory"></textarea>
+      <div class="row"><button class="btn primary" id="check">Check</button><button class="btn" id="clear">Clear</button></div>
+      <div id="recOut"></div>`;
+    $('clear').onclick=()=>{$('recTxt').value='';$('recRef').value='';$('recOut').innerHTML=''};
+    $('check').onclick=()=>{
+      const norm=s=>s.toLowerCase().replace(/[^a-z0-9\s']/g,' ').replace(/'/g,'').split(/\s+/).filter(Boolean);
+      const exp=toks.filter(t=>t.core), a=exp.map(t=>norm(t.core).join('')), b=norm($('recTxt').value);
+      const n=a.length,m=b.length,D=Array.from({length:n+1},()=>new Uint16Array(m+1));
+      for(let i=n-1;i>=0;i--)for(let j=m-1;j>=0;j--)D[i][j]=a[i]===b[j]?D[i+1][j+1]+1:Math.max(D[i+1][j],D[i][j+1]);
+      const hit=new Set();let i=0,j=0;
+      while(i<n&&j<m){if(a[i]===b[j]){hit.add(i);i++;j++}else if(D[i+1][j]>=D[i][j+1])i++;else j++}
+      let k=0;const html=toks.map(t=>{if(!t.core)return esc(t.w);const ok=hit.has(k++);return `<span class="w ${ok?'ok':'miss'}">${esc(t.w)}</span>`}).join(' ');
+      const pct=Math.round(hit.size/n*100);
+      const refOk=norm($('recRef').value).join('')===norm(v.ref).join('');
+      const extra=m-hit.size;
+      $('recOut').innerHTML=`<div class="verse" style="font-size:1.2rem">${html}</div>
+        <div class="result"><b>${pct}%</b> of words recalled · reference ${refOk?'<b>correct</b>':'<b style="color:var(--rubric)">missed</b>'}${extra>0?` · ${extra} extra or misspelled word${extra>1?'s':''}`:''}. Missed words are underlined in red.
+        ${pct===100&&refOk?' Grade it Good.':pct>=85?' Grade it Hard.':' Grade it Again.'}</div>`;
+    };
+  }
+}
+
+function renderGrade(){
+  const p=P(cur),t=today();
+  const nextBox={again:1,hard:Math.max(1,p.box),good:Math.min(5,p.box+1)};
+  const lbl=d=>d===0?'today':d===1?'tomorrow':`in ${d} days`;
+  const days={again:0,hard:1,good:INTERVALS[nextBox.good]};
+  $('gradeRow').innerHTML=['again','hard','good'].map(g=>`<button class="btn ${g==='good'?'primary':''}" data-g="${g}">${g[0].toUpperCase()+g.slice(1)}<small style="${g==='good'?'color:inherit;opacity:.75':''}">${lbl(days[g])}</small></button>`).join('');
+  $('gradeRow').querySelectorAll('[data-g]').forEach(b=>b.onclick=()=>{
+    const g=b.dataset.g;p.box=nextBox[g];p.due=t+days[g];p.n++;p.last=t;save();
+    toast(g==='again'?'Back in today’s queue':`Next review ${lbl(days[g])}`);
+    const nxt=verses.find(v=>v.id!==cur&&status(v.id)==='due');
+    if(nxt&&g!=='again'){cur=nxt.id;lettersState=null;mode='learn';save()}
+    render();
+  });
+  $('boxTxt').textContent=p.n?`BOX ${p.box} OF 5 · ${p.due<=t?'DUE TODAY':'NEXT '+lbl(p.due-t).toUpperCase()}`:'NEW';
+}
+
+function renderQueue(){
+  const t=today();
+  const rows=[...verses].sort((x,y)=>(!x.text)-(!y.text)||P(x.id).due-P(y.id).due);
+  $('queue').innerHTML=rows.map(v=>{const p=P(v.id),s=status(v.id);
+    const when=s==='empty'?'Needs text pasted':s==='new'?'New, start in Learn':s==='due'?'Due today':`Next in ${p.due-t} day${p.due-t>1?'s':''}`;
+    return `<button class="qrow" data-id="${v.id}"><div><div class="r">${esc(v.ref)}</div><div class="s ${s==='done'||s==='empty'?'':'due'}">${when}</div></div>
+      <div class="boxes" title="Box ${p.box} of 5">${[1,2,3,4,5].map(n=>`<i class="${p.box>=n?'on':''}"></i>`).join('')}</div></button>`}).join('');
+  $('queue').querySelectorAll('[data-id]').forEach(b=>b.onclick=()=>{cur=b.dataset.id;lettersState=null;save();render();$('studyCard').scrollIntoView({behavior:'smooth'})});
+  $('removeBtn').textContent=removeArmed?`Tap again to remove ${verse().ref}`:'Remove this verse';
+  $('removeBtn').disabled=verses.length<=1||verse().built;
+  $('removeBtn').title=verse().built?'Built-in verses are removed by asking Claude to update the app':'';
+}
+
+function render(){
+  const v=verse();
+  $('refTxt').textContent=`${v.ref}${v.tr?' '+v.tr:''}`;
+  $('tabs').querySelectorAll('.tab').forEach(b=>b.setAttribute('aria-selected',b.dataset.m===mode));
+  $('tabs').hidden=!v.text;document.querySelector('.grade').hidden=!v.text;
+  renderPicker();renderStage();renderGrade();renderQueue();
+}
+
+$('tabs').querySelectorAll('.tab').forEach(b=>b.onclick=()=>{mode=b.dataset.m;render()});
+$('saveVerse').onclick=()=>{
+  const ref=$('newRef').value.trim(),text=$('newText').value.trim().replace(/\s+/g,' ');
+  if(!ref||!text){toast('Add both a reference and the verse text');return}
+  let id=slug(ref);while(verses.find(v=>v.id===id))id+='-x';
+  verses.push({id,ref:ref.replace(/\s*\(?ESV\)?$/i,''),text,tr:'ESV'});cur=id;mode='learn';
+  $('newRef').value='';$('newText').value='';$('addCard').hidden=true;save();render();toast('Verse added');
+};
+$('cancelAdd').onclick=()=>$('addCard').hidden=true;
+$('removeBtn').onclick=()=>{
+  if(!removeArmed){removeArmed=true;renderQueue();setTimeout(()=>{removeArmed=false;renderQueue()},4000);return}
+  const ref=verse().ref;verses=verses.filter(v=>v.id!==cur);delete prog[cur];cur=verses[0].id;removeArmed=false;save();render();toast(`Removed ${ref}`);
+};
+$('exportBtn').onclick=()=>{
+  const txt=verses.filter(v=>v.text).map(v=>`${v.ref} (ESV)\n${v.text}`).join('\n\n')||'No verse text pasted yet.';
+  const box=$('exportBox');box.value=txt;
+  const fallback=()=>{box.hidden=false;box.focus();box.select();toast('Select all and copy')};
+  try{navigator.clipboard.writeText(txt).then(()=>toast('Copied. Paste it to Claude to hard-code these.'),fallback)}catch(e){fallback()}
+};
+render();
+</script>
+
+</body>
+</html>
