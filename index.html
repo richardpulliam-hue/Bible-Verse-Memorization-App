@@ -54,6 +54,9 @@ h1 em{color:var(--rubric);font-style:italic}
 .hint{color:var(--rubric);font-weight:600}
 .peek{color:var(--gold)}
 .ok{color:var(--ink)} .helped{color:var(--gold)} .miss{color:var(--rubric);text-decoration:underline wavy;text-underline-offset:4px}
+.add{color:var(--gold);text-decoration:line-through;text-decoration-thickness:2px;opacity:.9}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:.78rem;color:var(--muted)}
+.legend i{font-style:normal;font-family:var(--serif);font-size:.95rem}
 .chunks{list-style:none;margin:0;padding:0;font-family:var(--serif);font-size:1.4rem;line-height:1.55;display:flex;flex-direction:column;gap:6px}
 .chunks li{padding-left:14px;border-left:2px solid var(--rule)}
 .steps{margin:0;padding-left:20px;color:var(--muted);font-size:.9rem;display:flex;flex-direction:column;gap:4px}
@@ -383,18 +386,42 @@ function renderStage(){
     $('clear').onclick=()=>{$('recTxt').value='';$('recRef').value='';$('recOut').innerHTML=''};
     $('check').onclick=()=>{
       const norm=s=>s.toLowerCase().replace(/[^a-z0-9\s']/g,' ').replace(/'/g,'').split(/\s+/).filter(Boolean);
-      const exp=toks.filter(t=>t.core), a=exp.map(t=>norm(t.core).join('')), b=norm($('recTxt').value);
+      const key=w=>norm(w).join('');
+      const expIdx=toks.map((t,i)=>i).filter(i=>toks[i].core), a=expIdx.map(i=>key(toks[i].core));
+      const typed=$('recTxt').value.split(/\s+/).filter(w=>key(w)), b=typed.map(key);
       const n=a.length,m=b.length,D=Array.from({length:n+1},()=>new Uint16Array(m+1));
       for(let i=n-1;i>=0;i--)for(let j=m-1;j>=0;j--)D[i][j]=a[i]===b[j]?D[i+1][j+1]+1:Math.max(D[i+1][j],D[i][j+1]);
-      const hit=new Set();let i=0,j=0;
-      while(i<n&&j<m){if(a[i]===b[j]){hit.add(i);i++;j++}else if(D[i+1][j]>=D[i][j+1])i++;else j++}
-      let k=0;const html=toks.map(t=>{if(!t.core)return esc(t.w);const ok=hit.has(k++);return `<span class="w ${ok?'ok':'miss'}">${esc(t.w)}</span>`}).join(' ');
-      const pct=Math.round(hit.size/n*100);
-      const refOk=norm($('recRef').value).join('')===norm(v.ref).join('');
-      const extra=m-hit.size;
+      // walk the alignment: ok = matched, miss = left out, add = typed but not in the verse
+      const ops=[];let i=0,j=0;
+      while(i<n||j<m){
+        if(i<n&&j<m&&a[i]===b[j]){ops.push({t:'ok',i});i++;j++}
+        else if(j>=m||(i<n&&D[i+1][j]>=D[i][j+1])){ops.push({t:'miss',i});i++}
+        else{ops.push({t:'add',j});j++}
+      }
+      // group each run between matches; a run with both left-out and added words is a changed word
+      let html='',lastTok=-1,hits=0,missed=0,added=0,changed=0,run=[];
+      const emitExp=(k,cls)=>{const ti=expIdx[k];let out='';
+        for(let q=lastTok+1;q<ti;q++)out+=esc(toks[q].w)+' ';lastTok=ti;
+        return out+`<span class="w ${cls}">${esc(toks[ti].w)}</span> `};
+      const flush=()=>{
+        if(!run.length)return;
+        const ms=run.filter(o=>o.t==='miss'),ad=run.filter(o=>o.t==='add'),c=Math.min(ms.length,ad.length);
+        changed+=c;missed+=ms.length-c;added+=ad.length-c;
+        html+=ad.map(o=>`<span class="w add" title="You added this">${esc(typed[o.j])}</span> `).join('');
+        html+=ms.map(o=>emitExp(o.i,c?'miss swap':'miss')).join('');
+        run=[];
+      };
+      for(const o of ops){if(o.t==='ok'){flush();hits++;html+=emitExp(o.i,'ok')}else run.push(o)}
+      flush();for(let q=lastTok+1;q<toks.length;q++)html+=esc(toks[q].w)+' ';
+      const errors=missed+added+changed;
+      const pct=Math.round(hits/n*100);
+      const refOk=key($('recRef').value)===key(v.ref);
+      const parts=[];
+      if(missed)parts.push(`${missed} left out`);if(changed)parts.push(`${changed} changed`);if(added)parts.push(`${added} added`);
+      const verdict=!errors&&refOk?'Word perfect. Grade it Good.':errors<=2&&pct>=85?'Close. Grade it Hard.':'Grade it Again.';
       $('recOut').innerHTML=`<div class="verse" style="font-size:1.2rem">${html}</div>
-        <div class="result"><b>${pct}%</b> of words recalled · reference ${refOk?'<b>correct</b>':'<b style="color:var(--rubric)">missed</b>'}${extra>0?` · ${extra} extra or misspelled word${extra>1?'s':''}`:''}. Missed words are underlined in red.
-        ${pct===100&&refOk?' Grade it Good.':pct>=85?' Grade it Hard.':' Grade it Again.'}</div>`;
+        <div class="legend"><span><i class="w miss">word</i> left out</span><span><i class="w add">word</i> you added</span><span><i class="w add">yours</i> <i class="w miss swap">verse</i> changed</span></div>
+        <div class="result"><b>${pct}%</b> of words recalled${parts.length?' · '+parts.join(', '):' · no wrong words'} · reference ${refOk?'<b>correct</b>':'<b style="color:var(--rubric)">missed</b>'}. ${verdict}</div>`;
     };
   }
 }
